@@ -13,7 +13,7 @@ dependencies {
     testImplementation(libs.bundles.ktor.test)
     testImplementation(kotlin("test"))
 }
-java { toolchain { languageVersion = JavaLanguageVersion.of(22) } }
+java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
 application { mainClass = "io.nexure.discount.ApplicationKt" }
 
 tasks {

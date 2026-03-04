@@ -2,3 +2,7 @@
 .kotlin
 .gradle
 build
+
+# Solution files - DO NOT COMMIT to candidate branch
+EVALUATOR_GUIDE.md
+ASSIGNMENT_OVERVIEW.md

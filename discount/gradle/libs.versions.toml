@@ -5,15 +5,18 @@ reactor_core = "3.7.6"
 coroutines_reactor = "1.10.2"
 testcontainers = "1.20.6"
 mockk = "1.13.17"
+mongodb = "5.2.1"
 [libraries]
 ktor_server_core_jvm = { group = "io.ktor", name = "ktor-server-core-jvm", version.ref = "ktor" }
 ktor_server_netty_jvm = { group = "io.ktor", name = "ktor-server-netty-jvm", version.ref = "ktor" }
 ktor_server_host_common_jvm = { group = "io.ktor", name = "ktor-server-host-common-jvm", version.ref = "ktor" }
 ktor_server_test_host = { group = "io.ktor", name = "ktor-server-test-host-jvm", version.ref = "ktor" }
 ktor_serialization_kotlinx_json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktor_server_content_negotiation = { group = "io.ktor", name = "ktor-server-content-negotiation", version.ref = "ktor" }
 ktor_client_okhttp = { group = "io.ktor", name = "ktor-client-okhttp-jvm", version.ref = "ktor" }
 ktor_client_core = { group = "io.ktor", name = "ktor-client-core-jvm", version.ref = "ktor" }
 ktor_client_content_negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
+mongodb_driver_kotlin_coroutine = { group = "org.mongodb", name = "mongodb-driver-kotlin-coroutine", version.ref = "mongodb" }
 reactor_core = { group = "io.projectreactor", name = "reactor-core", version.ref = "reactor_core" }
 kotlinx_coroutines_reactor = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-reactor", version.ref = "coroutines_reactor" }
 kotlinx_coroutines_test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test-jvm", version.ref = "coroutines_reactor" }
@@ -25,12 +28,14 @@ mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 common = [
     "reactor_core",
     "kotlinx_coroutines_reactor",
+    "mongodb_driver_kotlin_coroutine",
 ]
 ktor-server = [
     "ktor_server_core_jvm",
     "ktor_server_netty_jvm",
     "ktor_server_host_common_jvm",
     "ktor_serialization_kotlinx_json",
+    "ktor_server_content_negotiation",
 ]
 ktor-client = [
     "ktor_client_core",

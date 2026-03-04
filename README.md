@@ -1,35 +1,41 @@
-# 🧩 Country-Based Product API — Technical Assessment
+# 🐛 Country-Based Product API — Bug Fix Challenge
 
-Build a single Kotlin (Ktor) service that manages products and discounts.
+## 📋 Assignment Overview
 
-## 📦 Problem Description
-You’ll build a Product API that:
-- Stores a catalog of products.
-- Calculates final prices including country VAT and discounts.
-- Allows concurrent discount application, but guarantees:
-  > “The same discount cannot be applied more than once to the same product — even under heavy concurrent load.”
+We've implemented a Ktor service for managing products and discounts, but **the tests are failing**. Your task is to **identify and fix the bugs** causing the test failures, and ensure the implementation meets the business requirements.
 
-**Final price formula:**  
-`finalPrice = basePrice × (1 - totalDiscount%) × (1 + VAT%)`
+**Important:** The failing tests indicate what needs to be fixed. However, passing tests don't guarantee correct implementation — think critically about the business logic and edge cases.
+
+## ⏱️ Time Expectation
+This should take approximately **1-2 hours**. We value your time!
 
 ---
 
-## 🧱 Data Model
+## 🎯 Your Task
 
-### Product
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | String | Unique identifier |
-| `name` | String | Product name |
-| `basePrice` | Double | Price before tax and discount |
-| `country` | String | Country name |
-| `discounts` | List<Discount> | List of applied discounts |
+1. **Run the tests** — you'll see multiple failures
+2. **Analyze the failures** — understand what's expected vs. what's happening
+3. **Fix the bugs** — modify the implementation code to make tests pass
+4. **Review the business logic** — ensure the implementation handles edge cases properly
+5. **Verify** — all tests should pass AND the business logic should be sound
 
-### Discount
-| Field | Type | Description |
-|--------|------|-------------|
-| `discountId` | String | Unique discount identifier (idempotency key) |
-| `percent` | Double | Discount percentage (0–100, exclusive of 0) |
+### Rules:
+- ✅ Fix implementation code
+- ✅ Add missing configuration
+- ✅ Fix database/concurrency issues
+- ✅ Add proper validation and error handling where needed
+- ✅ You may modify or add tests if you identify incorrect test expectations (document why!)
+- ❌ Do NOT simplify the requirements
+
+---
+
+## 📦 What the Service Should Do
+
+The Product API:
+- Stores products with country-specific VAT rates
+- Calculates final prices: `finalPrice = basePrice × (1 - totalDiscount) × (1 + VAT)`
+- Applies discounts idempotently (same discount cannot be applied twice)
+- **Handles concurrent discount requests safely** (critical requirement!)
 
 ### Country VAT Rules
 | Country | VAT |
@@ -38,59 +44,91 @@ You’ll build a Product API that:
 | Germany | 19% |
 | France | 20% |
 
+**Note:** The system should properly validate and handle requests for countries not in this table. Think about what the correct behavior should be.
+
 ---
 
 ## 📡 API Endpoints
 
 ### `GET /products?country={country}`
-Returns all products for the given country, including their **final price**.
+Returns all products for the given country with calculated final prices.
+
+**Response:**
+```json
+[
+  {
+    "id": "prod-1",
+    "name": "Laptop",
+    "basePrice": 1000.0,
+    "country": "Sweden",
+    "discounts": [
+      {"discountId": "SUMMER10", "percent": 10.0}
+    ],
+    "finalPrice": 1125.0
+  }
+]
+```
 
 ### `PUT /products/{id}/discount`
-Applies a discount to a product in a manner that is idempotent and not subject to race conditions.
+Applies a discount to a product. Must be idempotent and concurrency-safe.
 
-**Expected behavior:**
-If multiple clients apply the same discount concurrently:
-- Only first successful request will persist changes
-- Any identical request that follows should not update state or have any side effects
+**Request:**
+```json
+{
+  "discountId": "SUMMER10",
+  "percent": 10.0
+}
+```
+
+**Response:**
+```json
+{
+  "id": "prod-1",
+  "name": "Laptop",
+  "basePrice": 1000.0,
+  "country": "Sweden",
+  "discounts": [
+    {"discountId": "SUMMER10", "percent": 10.0}
+  ],
+  "finalPrice": 1125.0
+}
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- JDK 21
+- Docker (for MongoDB via Testcontainers)
+
+### Run Tests
+```bash
+cd discount
+./gradlew test
+```
+
+You should see several test failures. Your job is to fix them!
 
 ---
 
-## Requirements
-- Use a persistent database for storing products and discounts (e.g. MongoDB or PostgreSQL).
-  - In-memory solutions (e.g. ConcurrentHashMap) are not allowed. Concurrency must be enforced at the database level.
-- Implement the endpoints described above (GET /products, PUT /products/{id}/discount).
-- Store products and applied discounts.
-- Calculate finalPrice including VAT and discounts.
-- Ensure the same discount cannot be applied more than once per product.
-- Demonstrate concurrency safety with a test that simulates multiple simultaneous discount requests via http endpoints.
+## 🐛 Issues
+
+The tests are failing for various reasons. Some bugs are subtle, others are more obvious. Not all bugs cause test failures! Think critically about what could go wrong.
 
 ---
 
-## 🧩 Deliverables
-
-1. **Code** for the service, runnable locally (via Gradle or Docker Compose).
-2. **README.md** with:
-    - Build and run instructions
-    - Example curl commands
-3. **ARCHITECTURE.md** with:
-    - A short design explanation
-    - Description of your concurrency approach
-    - At least one **Mermaid sequence diagram** for:
-        - `GET /products`
-        - `PUT /products/{id}/discount`
-
----
 ## 📬 Submission
 
-When you’re done:
-1. Push your solution to a **public GitHub repository**.
-2. Ensure we can build and run it locally.
-3. Include:
-    - Code
-    - README.md
-    - ARCHITECTURE.md (with diagrams)
+When all tests pass:
+1. Commit your changes with clear commit messages
+2. Push to your fork or branch
+3. Share the repository link
 
-Then share the repository link.
+Add a brief `FIXES.md` explaining what bugs you found and how you fixed them.
+
 ---
-✨ **Good luck, and have fun!**
+
+✨ **Good luck! Remember: the tests are your specification.**
+
 ---
