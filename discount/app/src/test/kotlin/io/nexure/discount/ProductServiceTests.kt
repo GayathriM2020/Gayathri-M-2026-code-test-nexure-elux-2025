@@ -4,7 +4,8 @@ import com.mongodb.kotlin.client.coroutine.MongoClient
 import io.nexure.discount.model.Discount
 import io.nexure.discount.model.Product
 import io.nexure.discount.repository.ProductRepository
-import io.nexure.discount.service.ProductService  
+import io.nexure.discount.service.ProductService
+import io.nexure.discount.service.UnsupportedCountryException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -15,6 +16,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -229,9 +231,12 @@ class ProductServiceTests {
     
     @Test
     fun `should return empty list for country with no products`() = runBlocking {
-        // Test
-        val products = service.getProductsByCountry("NonExistentCountry")
-        
+        // this used to query "NonExistentCountry" - but that's an unsupported country, not a
+        // supported one with zero products, which is what this test is actually meant to check.
+        // switched to a real supported country with nothing saved for it instead. the
+        // unsupported-country case is its own test now (below)
+        val products = service.getProductsByCountry("Sweden")
+
         // Assert
         assertTrue(products.isEmpty(), "Should return empty list for country with no products")
     }
@@ -255,15 +260,16 @@ class ProductServiceTests {
     }
     
     @Test
-    fun `should handle products from unknown countries`() = runBlocking {
-        // Setup
+    fun `should reject requests for unsupported countries`() = runBlocking {
+        // this replaces the old "should handle products from unknown countries" test, which
+        // asserted that an unconfigured country (UnitedKingdom) silently worked with 0% VAT.
+        // that's the bug the README points at - silently defaulting to 0% VAT means we just
+        // never charge VAT for markets we haven't configured, which isn't a safe default.
+        // unsupported countries should get rejected instead.
         repository.save(Product("uk1", "Item", 100.0, "UnitedKingdom", emptyList()))
-        
-        // Test
-        val products = service.getProductsByCountry("UnitedKingdom")
-        
-        // Assert
-        assertEquals(1, products.size)
-        assertEquals(100.0, products[0].finalPrice, 0.01)
+
+        assertFailsWith<UnsupportedCountryException> {
+            service.getProductsByCountry("UnitedKingdom")
+        }
     }
 }

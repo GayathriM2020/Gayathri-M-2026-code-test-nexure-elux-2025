@@ -3,6 +3,8 @@ package io.nexure.discount.repository
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.IndexOptions
 import com.mongodb.client.model.Indexes
+import com.mongodb.client.model.ReplaceOptions
+import com.mongodb.client.model.Updates
 import com.mongodb.kotlin.client.coroutine.MongoClient
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import io.nexure.discount.model.Discount
@@ -22,17 +24,10 @@ class ProductRepository(mongoClient: MongoClient, databaseName: String = "produc
     }
     
     suspend fun save(product: Product): Product {
+        // upsert in one shot instead of find-then-insert-or-replace, that had its own small race
+        // window between the check and the write
         val filter = Filters.eq("id", product.id)
-        val existing = collection.find(filter).firstOrNull()
-        
-        if (existing != null) {
-            // Update existing product
-            collection.replaceOne(filter, product)
-        } else {
-            // Insert new product
-            collection.insertOne(product)
-        }
-        
+        collection.replaceOne(filter, product, ReplaceOptions().upsert(true))
         return product
     }
     
@@ -45,22 +40,24 @@ class ProductRepository(mongoClient: MongoClient, databaseName: String = "produc
     }
     
     suspend fun applyDiscount(productId: String, discount: Discount): Product? {
-        val product = findById(productId) ?: return null
-        
-        val hasDiscount = product.discounts.any { it.discountId == discount.discountId }
-        if (hasDiscount) {
-            return product
-        }
-        
-        // Throttle to prevent MongoDB write overload
-        kotlinx.coroutines.delay(5)
-        
-        val updatedDiscounts = product.discounts + discount
-        val updatedProduct = product.copy(discounts = updatedDiscounts)
-        
-        return save(updatedProduct)
+        // Atomic conditional update prevents duplicate discounts and lost updates
+        // during concurrent requests.
+        val filter = Filters.and(
+            Filters.eq("id", productId),
+            Filters.not(Filters.elemMatch("discounts", Filters.eq("discountId", discount.discountId)))
+        )
+        val update = Updates.push("discounts", discount)
+
+        collection.updateOne(filter, update)
+
+        return findById(productId)
     }
     
+    suspend fun deleteById(id: String): Boolean {
+        val result = collection.deleteOne(Filters.eq("id", id))
+        return result.deletedCount > 0
+    }
+
     suspend fun deleteAll() {
         collection.drop()
     }

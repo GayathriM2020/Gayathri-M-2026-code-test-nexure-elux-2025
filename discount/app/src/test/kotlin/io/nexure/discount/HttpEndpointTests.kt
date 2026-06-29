@@ -91,9 +91,24 @@ class HttpEndpointTests {
         application {
             module()
         }
-        
+
         val response = client.get("/products")
-        
+
         assertEquals(HttpStatusCode.BadRequest, response.status)
+    }
+
+    @Test
+    fun `should return 400 when country is not supported`() = testApplication {
+        environment {
+            config = MapApplicationConfig("mongodb.uri" to mongoContainer.connectionString)
+        }
+        application {
+            module()
+        }
+
+        val response = client.get("/products?country=Narnia")
+
+        assertEquals(HttpStatusCode.BadRequest, response.status,
+            "Unsupported countries should be rejected rather than silently defaulting to 0% VAT.")
     }
 }

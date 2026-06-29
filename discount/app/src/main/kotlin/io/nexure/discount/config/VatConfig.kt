@@ -10,8 +10,13 @@ object VatConfig {
         "Germany" to GERMANY_VAT,
         "France" to FRANCE_VAT
     )
-    
+
+    // used to just return 0.0 for unknown countries, which quietly means "never charge VAT for
+    // this market" - that's a compliance problem, not a sane default, so now we just reject it
     fun getVatRate(country: String): Double {
-        return vatRates[country] ?: 0.0
+        return vatRates[country]
+            ?: throw io.nexure.discount.service.UnsupportedCountryException(country)
     }
+
+    fun isSupported(country: String): Boolean = vatRates.containsKey(country)
 }
