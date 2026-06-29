@@ -80,10 +80,7 @@ fun Application.module() {
             }
         }
 
-        // everything below this point isn't part of the README spec (which only asks for
-        // GET /products and PUT .../discount) - added these so I could create/inspect/delete
-        // products with curl instead of seeding mongo by hand while testing
-
+        // extra endpoints for manual testing - create/get/delete a product directly
         post(PRODUCTS_ENDPOINT) {
             val request = call.receive<CreateProductRequest>()
             try {

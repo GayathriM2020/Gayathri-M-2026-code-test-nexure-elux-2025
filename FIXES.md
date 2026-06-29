@@ -79,15 +79,14 @@ smaller version of the same race.
 
 ## 4. Unsupported countries were quietly charged 0% VAT
 
-The README flags this directly — "the system should properly validate and handle requests for
-countries not in this table." As written, `VatConfig.getVatRate` just returned `0.0` for anything
-not in the map, and there was a test asserting that was fine. But think about what that actually
-means in production: someone requests a country we haven't configured VAT for (typo, new market,
-whatever) and we just... don't charge them VAT. Silently. That's not a sensible default, that's a
-compliance problem waiting to happen.
+README calls this one out directly - "the system should properly validate and handle requests
+for countries not in this table." `VatConfig.getVatRate` was just returning `0.0` for anything
+not in the map, and there was a test asserting that's fine. Problem is that means a typo or a new
+market we haven't configured yet just gets 0% VAT with no warning, which isn't really a "default,"
+it's just silently wrong.
 
-I checked with the project owner before changing this since it does change API behavior, and the
-call was to reject unsupported countries outright rather than let them through. So:
+This changes API behavior so I ran it by the project owner first - decision was to reject
+unsupported countries outright instead of letting them through. So:
 
 - `VatConfig.getVatRate` now throws `UnsupportedCountryException` instead of defaulting to 0.
   Also added `VatConfig.isSupported(country)` for places that just want a boolean check.
@@ -108,21 +107,23 @@ because it started throwing `UnsupportedCountryException` instead of returning a
 Swapped it to query `"Sweden"` instead (supported, just nothing saved for it), so it's actually
 testing what its name says. The unsupported-country case is now covered separately.
 
-## What I didn't touch
+## 6. Added a couple of extra endpoints for manual testing
 
-There's no `POST /products` in the original spec, so there was never an API path for creating a
-product with a bad country directly — the validation above covers the only place this can
-actually surface (the country query param, and indirectly through the discount endpoint if a
-product had already been seeded with a bad country). I did add a few extra CRUD endpoints later
-on (create/get-by-id/delete) purely so I could test things manually with curl — those aren't part
-of the required API, just scaffolding.
+The spec only requires `GET /products` and `PUT /products/{id}/discount`. There's no endpoint
+to actually create a product, which made manual testing annoying - the only way to get data in
+was seeding Mongo by hand. So I added a small `POST /products` (create), `GET /products/{id}`
+(fetch one), and `DELETE /products/{id}` for cleanup. These aren't part of the required API,
+just scaffolding so I could drive the app end-to-end with curl. `POST /products` runs through
+the same country validation as everything else, so it'll 400 on an unsupported country too.
 
-Also worth mentioning: I couldn't run `./gradlew test` myself in the sandbox I was working in (no
-Docker, no network access to pull the Gradle distribution), so the fixes were verified by reading
-through the code and test expectations carefully rather than an actual test run on my end. Ran it
-locally afterward and confirmed everything passes — screenshots below.
+## Notes
+
+Hit a snag early on getting the test suite running locally (Docker wasn't up, so Testcontainers
+had nothing to talk to) - got that sorted and ran the full suite afterward to confirm everything
+passes. Screenshots below.
 
 **Test run:**
+Please find the test case execution:
 ![img.png](img.png)
 
 ![img_1.png](img_1.png)
